@@ -1,0 +1,65 @@
+version: "3.9"
+
+x-gpu: &gpu
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+
+x-volumes: &volumes
+  volumes:
+    - /data/ammar/4g.zarr:/data/4g.zarr:ro
+    - /data/ammar/evidential:/workspace
+    - /data/ammar/evidential/artifacts:/workspace/artifacts
+
+services:
+
+  compute_stats:
+    build: .
+    image: evidential:latest
+    <<: [*gpu, *volumes]
+    shm_size: '4g'
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+    command: >
+      python scripts/compute_stats.py
+        --config configs/experiments/singletask_height_unet_evidential.yaml
+        --num_workers 12
+
+  train:
+    build: .
+    image: evidential:latest
+    <<: [*gpu, *volumes]
+    shm_size: '16g'
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+    command: >
+      python scripts/train.py
+        --config configs/experiments/singletask_height_unet_evidential.yaml
+
+  train_multitask:
+    build: .
+    image: evidential:latest
+    <<: [*gpu, *volumes]
+    shm_size: '16g'
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+    command: >
+      python scripts/train.py
+        --config configs/unet_evidential.yaml
+
+  eval:
+    build: .
+    image: evidential:latest
+    <<: [*gpu, *volumes]
+    shm_size: '8g'
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+    command: >
+      python scripts/evaluate.py
+        --config configs/experiments/singletask_height_unet_evidential.yaml
+        --checkpoint /workspace/artifacts/experiments/singletask_height_unet_evidential/checkpoints/best.pt
+        --split test

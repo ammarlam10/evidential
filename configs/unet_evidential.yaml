@@ -1,0 +1,84 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# UNet + ResNet50 encoder – evidential regression head
+#
+# Implements Deep Evidential Regression (Amini et al., NeurIPS 2020).
+# The final 1×1 conv produces N_t * 4 channels: (γ, ν, α, β) per target.
+# Loss = Student-t NLL + λ * evidential regularizer  (Eq. 8 + Eq. 9)
+#
+# Paths assume Docker mounts:
+#   dataset → /data/4g.zarr  (read-only; zarr group with inputs/, labels/, parquet)
+#   code    → /workspace
+# ─────────────────────────────────────────────────────────────────────────────
+
+data:
+  root: /data/4g.zarr
+  split_file: /data/4g.zarr/patch_index_subset.parquet
+
+  split_column: split
+  patch_idx_column: zarr_idx
+
+  s1_seasons: [summer, autumn, spring, winter]   # 4 × 2 bands = 8 ch
+  s2_seasons: [summer, autumn, spring, winter]   # 4 × 10 bands = 40 ch
+  use_species: true
+
+  valid_mask_mode: notnull
+
+  target_transform:
+    tree_count: log1p
+    mean_height: log1p
+
+  norm_stats_path: /workspace/artifacts/norm_stats.json
+
+# ─── Model ────────────────────────────────────────────────────────────────────
+model:
+  name: unet_evidential
+
+  unet:
+    encoder_name: resnet50
+    encoder_weights: imagenet
+    decoder_channels: [256, 128, 64, 32, 16]
+
+# ─── Training ─────────────────────────────────────────────────────────────────
+training:
+  seed: 42
+  deterministic: false
+
+  batch_size: 64
+  num_workers: 12
+  prefetch_factor: 2
+  pin_memory: true
+
+  cudnn_benchmark: true
+  ddp: false
+
+  epochs: 100
+  lr: 1.0e-4
+  weight_decay: 1.0e-4
+
+  scheduler: cosine
+
+  # Evidential NIG loss (Student-t NLL + regularizer)
+  loss: evidential_nig
+
+  # Evidential-specific settings
+  evidential:
+    lambda_coef: 0.1    # λ from Eq. 10; 0.1 used in paper's U-Net depth experiment
+
+  # Per-target loss weighting
+  loss_weights:
+    tree_count: 1.0
+    mean_height: 1.0
+
+  gradient_accumulation_steps: 1
+  amp: true
+
+  validate_every_n_epochs: 5
+  early_stopping_patience: 10
+
+  save_dir: /workspace/artifacts/checkpoints_evidential
+
+# ─── Logging ──────────────────────────────────────────────────────────────────
+logging:
+  tensorboard_dir: /workspace/artifacts/runs_evidential
+  csv_path: /workspace/artifacts/metrics_evidential.csv
+  log_every_n_steps: 10

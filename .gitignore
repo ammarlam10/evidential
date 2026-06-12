@@ -1,0 +1,26 @@
+__pycache__/
+*.pyc
+*.pyo
+.Python
+*.egg-info/
+
+# Artifacts: checkpoints and TensorBoard runs (not tracked)
+artifacts/checkpoints/
+artifacts/runs/
+
+# Ensemble / nested runs (large .pt files were stalling `git add .`)
+artifacts/ensemble/**/checkpoints/
+artifacts/ensemble/**/runs/
+artifacts/**/*.pt
+artifacts/figures/
+
+# TensorBoard event files
+artifacts/**/*.tfevents.*
+
+# Jupyter
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# Misc
+.DS_Store
+*.swp

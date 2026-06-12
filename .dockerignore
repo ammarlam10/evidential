@@ -1,0 +1,27 @@
+# Keep the Docker build context small — mount data/artifacts at runtime with -v.
+
+# Training outputs (checkpoints, runs, experiments) — mount artifacts/ instead
+artifacts/
+
+# Dataset (if ever stored inside the repo)
+data/
+*.zarr
+*.zarr/
+
+# Git / IDE / caches
+.git
+.gitignore
+.cursor
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+
+# Docs / plans (not needed in the image)
+*.md
+**/*.plan.md
+
+# Local env
+.env
+.venv
+venv/
