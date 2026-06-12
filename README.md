@@ -8,7 +8,6 @@ The model is a U-Net with ResNet50 encoder. The final head outputs Normal Invers
 
 - [Docker](https://docs.docker.com/get-docker/) with [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
 - NVIDIA GPU (16 GB+ VRAM recommended)
-- Zarr dataset mounted at `/data/4g.zarr` (see config paths)
 
 ## Setup
 
